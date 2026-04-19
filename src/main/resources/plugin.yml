@@ -1,0 +1,46 @@
+name: Jails
+version: '1.0'
+main: org.proto68.jails.Jails
+api-version: '26.1.2'
+prefix: UPBG Jails
+authors: [ Proto68 ]
+description: Plugin for managing jails
+softdepend:
+  - PlaceholderAPI
+commands:
+  upjail:
+    description: Main admin command for the plugin
+    usage: /upjail <subcommand>
+
+  jail:
+    description: Command for jailing players
+    usage: /jail <username> <time> [reason] [-s]
+
+  unjail:
+    description: Command to unjail a player
+    usage: /unjail <username> [reason] [-s]
+
+permissions:
+  jails.setcell:
+    description: Allows the player to set cells
+    default: op
+
+  jails.setregion:
+    description: Allows the player to set main region of jail
+    default: op
+
+  jails.reload:
+    description: Allows the sender to reload the plugin
+    default: op
+
+  jails.jail:
+    description: Allows the sender to jail a player
+    default: op
+
+  jails.unjail:
+    description: Allows the sender to unjail a player
+    default: op
+
+  jails.setspawn:
+    description: Allows the player to set spawn after unjail
+    default: op

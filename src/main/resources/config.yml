@@ -1,0 +1,120 @@
+enable: true
+
+database:
+  address: " "
+  database: " "
+  username: " "
+  password: " "
+  table: " "
+
+discord:
+  enabled: true
+  webhook_url: "https://discord.com/api/webhooks/YOUR/WEBHOOK"
+
+  jail:
+    enabled: true
+    color: 15158332        # Red (decimal). Use https://www.spycolor.com to pick
+    title: "🔒 Player Jailed"
+    footer: "UPBGJail"
+    thumbnail: "https://mc-heads.net/avatar/%player%"  # supports %player%
+    fields:
+      - name: "Player"
+        value: "%player%"
+        inline: true
+      - name: "Jailed By"
+        value: "%staff%"
+        inline: true
+      - name: "Cell"
+        value: "%cell%"
+        inline: true
+      - name: "Duration"
+        value: "%time%"
+        inline: true
+      - name: "Reason"
+        value: "%reason%"
+        inline: false
+
+  unjail:
+    enabled: true
+    color: 3066993         # Green
+    title: "🔓 Player Unjailed"
+    footer: "UPBGJail"
+    thumbnail: "https://mc-heads.net/avatar/%player%"
+    fields:
+      - name: "Player"
+        value: "%player%"
+        inline: true
+      - name: "Unjailed By"
+        value: "%staff%"
+        inline: true
+      - name: "Reason"
+        value: "%reason%"
+        inline: false
+
+  auto_release:
+    enabled: true
+    color: 3066993
+    title: "⏰ Player Auto-Released"
+    footer: "UPBGJail"
+    thumbnail: "https://mc-heads.net/avatar/%player%"
+    fields:
+      - name: "Player"
+        value: "%player%"
+        inline: true
+      - name: "Reason"
+        value: "Sentence expired"
+        inline: false
+
+messages:
+  no_permission: "&cNo permission."
+  usage_jail: "&cUsage: /jail <username> <time> [reason] [-s]"
+  player_not_found: "&cPlayer not found."
+  already_jailed: "&cThis player is already jailed."
+  invalid_time: "&cInvalid time format. Use: 10s, 5m, 2h, 1d"
+  invalid_int: "&cInvalid integer!"
+  no_cells: "&cNo cells are available."
+  invalid_cell: "&cCell location is invalid or world not found."
+  player_only: "&cThis command can only be run by a player."
+  spawn_set: "&aJail spawn location has been set to your current position."
+  released: "&aYou have been released from jail. Sentence expired."
+  release_system_reason: "Sentence expired"
+  usage_info: "&cUsage: /upjail info <username>"
+  usage_setcell: "&cUsage: /upjail setCell <username>"
+  usage_setregion: "&cUsage: /upjail setRegion <username>"
+  usage_setspawn: "&cUsage: /upjail setSpawn <username>"
+  region_set: "&aJail region set to: %region%"
+  no_region: "&cCan't find region: %region%"
+  cell_set: "&aCell %cell% set to your current location."
+  no_world_guard_manager: "&cCould not get WorldGuard manager!"
+
+  broadcast: "&c&l[JAIL] &f%player% &7has been jailed by &f%staff% &7for &f%time%&7. Reason: &f%reason%"
+
+  sender_silent: "&7[Silent] &aPlayer &f%player% &ahas been jailed.\n&7Cell: &f%cell% &7| Time: &f%time% &7| Reason: &f%reason%"
+
+  # Sent to the jailed player always
+  notify_jailed_title: "&c&lYou have been jailed!"
+  notify_jailed_by: "&7Jailed by: &f%staff%"
+  notify_jailed_reason: "&7Reason: &f%reason%"
+  notify_jailed_duration: "&7Duration: &f%time%"
+
+  # Unjail messages
+  usage_unjail: "&cUsage: /unjail <username> [reason] [-s]"
+  not_jailed: "&cThis player is not jailed."
+
+  broadcast_unjail: "&a&l[UNJAIL] &f%player% &7has been unjailed by &f%staff%&7. Reason: &f%reason%"
+
+  sender_silent_unjail: "&7[Silent] &aPlayer &f%player% &ahas been unjailed.\n&7Reason: &f%reason%"
+
+  # Sent to the unjailed player always
+  notify_unjailed_title: "&a&lYou have been unjailed!"
+  notify_unjailed_by: "&7Unjailed by: &f%staff%"
+  notify_unjailed_reason: "&7Reason: &f%reason%"
+
+jail:
+  region:
+  cells:
+  spawn:
+  command-whitelist:
+    - msg
+    - r
+    - help
