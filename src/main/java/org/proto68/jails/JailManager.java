@@ -2,10 +2,7 @@ package org.proto68.jails;
 
 import org.bukkit.event.HandlerList;
 import org.proto68.jails.database.DatabaseManager;
-import org.proto68.jails.listeners.ChatListener;
-import org.proto68.jails.listeners.CommandListener;
-import org.proto68.jails.listeners.ExitJailListener;
-import org.proto68.jails.listeners.JoinListener;
+import org.proto68.jails.listeners.*;
 
 import java.sql.SQLException;
 import java.util.logging.Level;
@@ -74,6 +71,7 @@ public class JailManager {
         plugin.getServer().getPluginManager().registerEvents(new ChatListener(plugin), plugin);
         plugin.getServer().getPluginManager().registerEvents(new CommandListener(plugin), plugin);
         plugin.getServer().getPluginManager().registerEvents(new ExitJailListener(plugin), plugin);
+        plugin.getServer().getPluginManager().registerEvents(new CMIListener(plugin), plugin);
     }
 
     private void connectDatabase(){
