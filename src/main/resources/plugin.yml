@@ -7,6 +7,9 @@ authors: [ Proto68 ]
 description: Plugin for managing jails
 softdepend:
   - PlaceholderAPI
+  - WorldEdit
+  - WorldGuard
+  - DecentHolograms
 commands:
   upjail:
     description: Main admin command for the plugin

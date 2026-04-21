@@ -7,6 +7,13 @@ database:
   password: " "
   table: " "
 
+template-reasons:
+  - Hacking
+  - Auto clicker
+  - Spamming
+  - Abuse
+
+
 discord:
   enabled: true
   webhook_url: "https://discord.com/api/webhooks/YOUR/WEBHOOK"
