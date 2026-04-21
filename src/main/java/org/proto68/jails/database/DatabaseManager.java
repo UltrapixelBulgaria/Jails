@@ -158,13 +158,15 @@ public class DatabaseManager {
 
         Player player = Bukkit.getPlayer(uuid);
 
-        boolean inJail;
-
-        inJail = player == null;
+        boolean online = player != null;
+        String text = "";
+        if (online) {
+            text = "in_jail = 0, ";
+        }
 
         String sql = "UPDATE " + config.getString("database.table") + " SET " +
                 "active = 0, " +
-                "in_jail = ?, " +
+                text +
                 "unjailed_by_uuid = ?, " +
                 "unjailed_by_name = ?, " +
                 "unjailed_by_reason = ?, " +
@@ -174,11 +176,10 @@ public class DatabaseManager {
         try (
              PreparedStatement ps = connection.prepareStatement(sql)) {
 
-            ps.setBoolean(1, inJail);
-            ps.setString(2, unjailedByUUID != null ? unjailedByUUID.toString() : null);
-            ps.setString(3, unjailedByName);
-            ps.setString(4, reason);
-            ps.setString(5, uuid.toString());
+            ps.setString(1, unjailedByUUID != null ? unjailedByUUID.toString() : null);
+            ps.setString(2, unjailedByName);
+            ps.setString(3, reason);
+            ps.setString(4, uuid.toString());
 
             ps.executeUpdate();
 

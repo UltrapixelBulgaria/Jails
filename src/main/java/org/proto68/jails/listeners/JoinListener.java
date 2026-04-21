@@ -35,7 +35,7 @@ public class JoinListener implements Listener {
 
 
         if (active != 1 && in_jail){
-            plugin.getJailScheduler().releasePlayer(uuid);
+            plugin.getJailScheduler().releasePlayer(uuid, false);
             databaseManager.updateInJail(uuid, false, active);
         } else if (active == 1 && !in_jail) {
             plugin.getJailScheduler().jailPlayer(uuid, cell, reason);

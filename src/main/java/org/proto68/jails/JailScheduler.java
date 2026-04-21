@@ -23,7 +23,7 @@ public class JailScheduler {
         long delayTicks = (until - System.currentTimeMillis()) / 50;
 
         if (delayTicks <= 0) {
-            releasePlayer(uuid);
+            releasePlayer(uuid, true);
             return;
         }
 
@@ -31,19 +31,21 @@ public class JailScheduler {
             @Override
             public void run() {
                 if (plugin.getDatabaseManager().isJailed(uuid))
-                    releasePlayer(uuid);
+                    releasePlayer(uuid, true);
             }
         }.runTaskLater(plugin, delayTicks);
     }
 
-    public void releasePlayer(UUID uuid) {
+    public void releasePlayer(UUID uuid, boolean sendDiscordNotification) {
         String systemReason = plugin.getConfig().getString("messages.release_system_reason", "Sentence expired");
         plugin.getDatabaseManager().unjailPlayer(uuid, null, "SYSTEM", systemReason);
 
         // Fetch username for webhook before player object check
         JailRecord record = plugin.getDatabaseManager().getJailRecord(uuid);
         String username = record != null ? record.username : uuid.toString();
-        plugin.getDiscordWebhook().sendAutoRelease(username);
+
+        if (sendDiscordNotification)
+            plugin.getDiscordWebhook().sendAutoRelease(username);
 
         Player player = Bukkit.getPlayer(uuid);
         if (player == null) return;
