@@ -4,6 +4,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.proto68.jails.JailScheduler;
 import org.proto68.jails.Jails;
 import org.proto68.jails.database.DatabaseManager;
 import org.proto68.jails.database.JailRecord;
@@ -24,21 +25,29 @@ public class JoinListener implements Listener {
         UUID uuid = player.getUniqueId();
 
         DatabaseManager databaseManager = plugin.getDatabaseManager();
+        JailScheduler scheduler = plugin.getJailScheduler();
+
         JailRecord record = databaseManager.getJailRecord(uuid);
         if (record == null)
             return;
 
         int active = record.active;
+
+        if (active == 1 && !databaseManager.isJailed(uuid)){
+            scheduler.releasePlayer(uuid, false);
+            record =  databaseManager.getJailRecord(uuid);
+            active = record.active;
+        }
+
         boolean in_jail = record.inJail;
         String reason = record.reason;
         int cell = record.cell;
 
-
         if (active != 1 && in_jail){
-            plugin.getJailScheduler().releasePlayer(uuid, false);
+            scheduler.releasePlayer(uuid, false);
             databaseManager.updateInJail(uuid, false, active);
         } else if (active == 1 && !in_jail) {
-            plugin.getJailScheduler().jailPlayer(uuid, cell, reason);
+            scheduler.jailPlayer(uuid, cell, reason);
             databaseManager.updateInJail(uuid, true, active);
         }
 
