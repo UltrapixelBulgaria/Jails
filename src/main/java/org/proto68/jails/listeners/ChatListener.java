@@ -26,6 +26,19 @@ public class ChatListener implements Listener {
     public void onChat(AsyncPlayerChatEvent event) {
         Player sender = event.getPlayer();
 
+        // First check if sender is in jail region
+        RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
+        RegionQuery query = container.createQuery();
+        String jailRegion = plugin.getConfig().getString("jail.region");
+        if (jailRegion == null) return;
+
+        var senderLoc = BukkitAdapter.adapt(sender.getLocation());
+        ApplicableRegionSet senderRegions = query.getApplicableRegions(senderLoc);
+        boolean senderInJail = senderRegions.getRegions().stream()
+                .anyMatch(r -> r.getId().equalsIgnoreCase(jailRegion));
+
+        if (!senderInJail) return;
+
         // Not jailed → ignore
         if (!plugin.getDatabaseManager().isJailed(sender.getUniqueId())) return;
 
@@ -36,21 +49,7 @@ public class ChatListener implements Listener {
 
             String message = "§c[JAIL] §7" + sender.getName() + ": §f" + event.getMessage();
 
-            RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
-            RegionQuery query = container.createQuery();
-
-            String jailRegion = plugin.getConfig().getString("jail.region");
-
-            if (jailRegion == null) return;
-
-            var senderLoc = BukkitAdapter.adapt(sender.getLocation());
-            ApplicableRegionSet senderRegions = query.getApplicableRegions(senderLoc);
-
-            boolean senderInJail = senderRegions.getRegions().stream()
-                    .anyMatch(r -> r.getId().equalsIgnoreCase(jailRegion));
-
-            if (!senderInJail) return;
-
+            // Note: container and query already defined above; reuse them
             for (Player target : Bukkit.getOnlinePlayers()) {
 
                 var targetLoc = BukkitAdapter.adapt(target.getLocation());
