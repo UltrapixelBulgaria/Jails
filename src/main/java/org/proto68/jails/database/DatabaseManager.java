@@ -1,5 +1,7 @@
 package org.proto68.jails.database;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -11,11 +13,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class DatabaseManager {
-    private Connection connection;
-    private final FileConfiguration config;
 
+    private final FileConfiguration config;
     private final Jails plugin;
     private final Logger logger;
+    private HikariDataSource dataSource;
 
     public DatabaseManager(FileConfiguration config, Logger logger, Jails plugin){
         this.config = config;
@@ -24,12 +26,47 @@ public class DatabaseManager {
     }
 
     public void connect() throws SQLException {
+        HikariConfig hikariConfig = new HikariConfig();
+
         String url = "jdbc:mysql://" + config.getString("database.address") + "/" + config.getString("database.database") + "?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC";
-        String user = config.getString("database.username");
-        String password = config.getString("database.password");
-        connection = DriverManager.getConnection(url, user, password);
+
+        hikariConfig.setJdbcUrl(url);
+        hikariConfig.setUsername(config.getString("database.username"));
+        hikariConfig.setPassword(config.getString("database.password"));
+        hikariConfig.setDriverClassName("com.mysql.cj.jdbc.Driver");
+
+        // --- Pool sizing ---
+        hikariConfig.setMaximumPoolSize(10);
+        hikariConfig.setMinimumIdle(2);
+
+        // --- THIS is what fixes your exact crash ---
+        // Validates connections are alive before handing them to your code,
+        // and proactively recycles connections before MySQL's wait_timeout kills them
+        hikariConfig.setMaxLifetime(1800000);      // 30 min — recycle before MySQL's wait_timeout
+        hikariConfig.setIdleTimeout(600000);       // 10 min — close idle connections in the pool
+        hikariConfig.setConnectionTimeout(10000);  // 10 sec — fail fast if DB is unreachable
+        hikariConfig.setKeepaliveTime(300000);     // 5 min — ping the DB to keep it alive
+
+        hikariConfig.setPoolName("UPBGJail-Pool");
+
+        dataSource = new HikariDataSource(hikariConfig);
+
+        // Test the pool immediately
+        try (Connection testConn = dataSource.getConnection()) {
+            logger.info("Database connection pool initialized successfully.");
+        }
 
         createTableIfNotExists();
+    }
+
+    public void disconnect() {
+        if (dataSource != null && !dataSource.isClosed()) {
+            dataSource.close();
+        }
+    }
+
+    public Connection getConnection() throws SQLException {
+        return dataSource.getConnection();
     }
 
     public void createTableIfNotExists() throws SQLException {
@@ -56,7 +93,8 @@ public class DatabaseManager {
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;";
             String query2 = "ALTER DATABASE " + config.getString("database.database") + " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;";
             String query3 = "SET GLOBAL event_scheduler = ON;";
-            try (Statement statement = connection.createStatement()) {
+            try (Connection conn = getConnection();
+                 Statement statement = conn.createStatement()) {
                 statement.executeUpdate(query);
                 statement.executeUpdate(query2);
                 statement.executeUpdate(query3);
@@ -75,7 +113,8 @@ public class DatabaseManager {
     private boolean doesTableExist(String tableName) {
         String sql = "SHOW TABLES LIKE ?";
 
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, tableName);
 
             ResultSet rs = ps.executeQuery();
@@ -111,8 +150,8 @@ public class DatabaseManager {
                 "(uuid, username, ip, reason, jailed_by_uuid, jailed_by_name, cell, time, until, active, in_jail, silent) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)";
 
-        try (
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, uuid.toString());
             ps.setString(2, username);
@@ -136,8 +175,8 @@ public class DatabaseManager {
     public void updateInJail(UUID uuid, boolean inJailValue, int activeValue) {
         String sql = "UPDATE " + config.getString("database.table") + " SET in_jail = ? WHERE uuid = ? AND active = ?";
 
-        try (
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setBoolean(1, inJailValue);
             ps.setString(2, uuid.toString());
@@ -173,8 +212,8 @@ public class DatabaseManager {
                 "unjailed_by_date = NOW() " +
                 "WHERE uuid = ? AND active = 1";
 
-        try (
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, unjailedByUUID != null ? unjailedByUUID.toString() : null);
             ps.setString(2, unjailedByName);
@@ -194,8 +233,8 @@ public class DatabaseManager {
                 "WHERE uuid = ? AND active = 1 " +
                 "ORDER BY id DESC LIMIT 1";
 
-        try (
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, uuid.toString());
 
@@ -220,7 +259,8 @@ public class DatabaseManager {
         String sql = "SELECT username FROM " + config.getString("database.table") +
                 " WHERE active = 1 AND until > ?";
 
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, System.currentTimeMillis());
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
@@ -237,7 +277,8 @@ public class DatabaseManager {
         String sql = "SELECT * FROM " + config.getString("database.table") +
                 " WHERE cell = ? AND active = 1 AND until > ? ORDER BY id DESC LIMIT 1";
 
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, cell);
             ps.setLong(2, System.currentTimeMillis());
             ResultSet rs = ps.executeQuery();
@@ -257,7 +298,8 @@ public class DatabaseManager {
         String sql = "SELECT * FROM " + config.getString("database.table") +
                 " WHERE uuid = ? ORDER BY id DESC LIMIT 1";
 
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, uuid.toString());
 
             ResultSet rs = ps.executeQuery();
@@ -282,7 +324,8 @@ public class DatabaseManager {
 
         List<JailRecord> records = new ArrayList<>();
 
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, uuid.toString());
 
             ResultSet rs = ps.executeQuery();
@@ -303,8 +346,8 @@ public class DatabaseManager {
 
         String sql = "SELECT cell FROM " + config.getString("database.table") + " WHERE active = 1";
 
-        try (
-             PreparedStatement ps = connection.prepareStatement(sql);
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
@@ -322,8 +365,8 @@ public class DatabaseManager {
 
         String sql = "SELECT uuid, until FROM " + config.getString("database.table") + " WHERE active = 1";
 
-        try (
-             PreparedStatement ps = connection.prepareStatement(sql);
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
@@ -335,12 +378,6 @@ public class DatabaseManager {
 
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Error while loading jails from DB", e);
-        }
-    }
-
-    public void disconnect() throws SQLException {
-        if (connection != null && !connection.isClosed()) {
-            connection.close();
         }
     }
 }

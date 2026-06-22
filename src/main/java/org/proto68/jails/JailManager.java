@@ -86,11 +86,6 @@ public class JailManager {
 
     private void disconnectDatabase() {
         if (databaseManager == null) return;
-        try {
-            databaseManager.disconnect();
-        } catch (SQLException e) {
-            plugin.getLogger().severe("Failed to disconnect database: " + e.getMessage());
-            plugin.getLogger().log(Level.SEVERE, "Error while disconnecting from the DB", e);
-        }
+        databaseManager.disconnect();
     }
 }

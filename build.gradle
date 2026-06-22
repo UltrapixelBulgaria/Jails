@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id("xyz.jpenilla.run-paper") version "2.3.1"
+    id 'com.gradleup.shadow' version '9.3.0'
 }
 
 group = 'org.proto68'
@@ -8,17 +9,9 @@ version = '1.0'
 
 repositories {
     mavenCentral()
-    maven {
-        name = "papermc-repo"
-        url = "https://repo.papermc.io/repository/maven-public/"
-    }
-    maven {
-        name = "enginehub"
-        url = "https://maven.enginehub.org/repo/"
-    }
-    maven {
-        url = 'https://repo.extendedclip.com/releases/'
-    }
+    maven { name = "papermc-repo"; url = "https://repo.papermc.io/repository/maven-public/" }
+    maven { name = "enginehub"; url = "https://maven.enginehub.org/repo/" }
+    maven { url = 'https://repo.extendedclip.com/releases/' }
 }
 
 dependencies {
@@ -27,40 +20,40 @@ dependencies {
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.16")
     compileOnly("me.clip:placeholderapi:2.12.2")
     compileOnly("net.raidstone:WorldGuardEvents:1.18.1")
+    implementation("com.zaxxer:HikariCP:5.1.0")
+    implementation("org.slf4j:slf4j-nop:2.0.13")
 }
 
-tasks {
-    runServer {
-        // Configure the Minecraft version for our task.
-        // This is the only required configuration besides applying the plugin.
-        // Your plugin's jar (or shadowJar if present) will be used automatically.
-        minecraftVersion("26.1.2")
-    }
-}
-
-def targetJavaVersion = 25
-java {
-    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
-    sourceCompatibility = javaVersion
-    targetCompatibility = javaVersion
-    if (JavaVersion.current() < javaVersion) {
-        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
-    }
-}
-
+// Disable the plain jar task entirely so it can't accidentally get deployed
 tasks.jar {
+    enabled = false
+}
+
+tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+    archiveBaseName.set("Jails")
+    archiveClassifier.set("")
+    archiveVersion.set("")
     destinationDirectory.set(
             file("C:/Users/mnogo/OneDrive/Desktop/Test Server/plugins")
     )
-    archiveFileName.set("${project.name}.jar")
+    relocate 'com.zaxxer.hikari', 'org.proto68.jails.libs.hikari'
+}
+
+build {
+    dependsOn shadowJar
+}
+
+def targetJavaVersion = 25
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-
-    if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
-        options.release.set(targetJavaVersion)
-    }
+    options.release.set(targetJavaVersion)
 }
 
 processResources {
