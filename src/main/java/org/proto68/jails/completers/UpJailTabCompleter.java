@@ -45,15 +45,14 @@ public class UpJailTabCompleter implements TabCompleter {
                         suggestions.add("info");
                     }
                 }
-            } else if (args.length == 2) {
-                if (args[0].equalsIgnoreCase("setregion")) {
-                    assert player != null;
+            } else if (args.length == 2 && player != null) {
+                if (args[0].equalsIgnoreCase("setregion") && player.hasPermission("jails.setregion")){
                     suggestions.addAll(getRegionNames(player));
                 }
-                if (args[0].equalsIgnoreCase("setcell")){
+                if (args[0].equalsIgnoreCase("setcell") && player.hasPermission("jails.setcell")){
                     suggestions.add("<number>");
                 }
-                if (args[0].equalsIgnoreCase("info")){
+                if (args[0].equalsIgnoreCase("info") && player.hasPermission("jails.info")){
                     suggestions.addAll(getOnlinePlayers());
                 }
             }

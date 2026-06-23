@@ -1,5 +1,5 @@
 name: Jails
-version: '1.0'
+version: '1.2'
 main: org.proto68.jails.Jails
 api-version: '26.1.2'
 prefix: UPBG Jails
@@ -46,4 +46,8 @@ permissions:
 
   jails.setspawn:
     description: Allows the player to set spawn after unjail
+    default: op
+
+  jails.info:
+    description: Allows the player to check jail info for another player
     default: op

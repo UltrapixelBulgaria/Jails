@@ -101,6 +101,11 @@ public class JailCommand implements CommandExecutor {
         UUID staffUUID = sender instanceof Player p ? p.getUniqueId() : null;
         String staffName = sender.getName();
 
+        // --- Run linked commands for this reason, if any are configured ---
+        if (reason != null) {
+            runReasonCommands(reason, username, staffName, String.valueOf(cell), args[1]);
+        }
+
         // --- Handle online target ---
         String ip = null;
         Player onlineTarget = target.isOnline() ? target.getPlayer() : null;
@@ -187,5 +192,41 @@ public class JailCommand implements CommandExecutor {
 
         // All cells occupied — pick random
         return allCells.isEmpty() ? -1 : allCells.get(new Random().nextInt(allCells.size()));
+    }
+
+    /**
+     * Looks up the reason in config.yml's template-reasons map and, if it
+     * has any associated commands, runs them as console — bypassing
+     * whatever permissions the staff member or target player would normally need.
+     */
+    private void runReasonCommands(String reason, String player, String staff, String cell, String time) {
+        ConfigurationSection reasons = plugin.getConfig().getConfigurationSection("template-reasons");
+        if (reasons == null) return;
+
+        // Match case-insensitively since staff may not type the exact casing
+        String matchedKey = null;
+        for (String key : reasons.getKeys(false)) {
+            if (key.equalsIgnoreCase(reason)) {
+                matchedKey = key;
+                break;
+            }
+        }
+
+        if (matchedKey == null) return;
+
+        List<String> commands = reasons.getStringList(matchedKey + ".commands");
+        if (commands.isEmpty()) return;
+
+        for (String cmd : commands) {
+            String resolved = cmd
+                    .replace("%player%", player)
+                    .replace("%staff%", staff)
+                    .replace("%cell%", cell)
+                    .replace("%time%", time)
+                    .replace("%reason%", reason);
+
+            // Run as console — ignores permissions entirely
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), resolved);
+        }
     }
 }

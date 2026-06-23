@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -90,6 +91,9 @@ public class JailTabCompleter implements TabCompleter {
     }
 
     public List<String> getTemplateReasons() {
-        return plugin.getConfig().getStringList("template-reasons");
+        ConfigurationSection reasons = plugin.getConfig().getConfigurationSection("template-reasons");
+        if (reasons == null) return List.of();
+
+        return new ArrayList<>(reasons.getKeys(false));
     }
 }

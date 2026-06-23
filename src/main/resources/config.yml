@@ -8,10 +8,17 @@ database:
   table: " "
 
 template-reasons:
-  - Hacking
-  - Auto clicker
-  - Spamming
-  - Abuse
+  Hacking:
+    commands:
+      - "ban %player% Hacking - banned via jail reason"
+  Auto clicker:
+    commands:
+      - "mute %player% 1d Auto clicker detected"
+  Spamming:
+    commands:
+      - "mute %player% 10m Spamming"
+  Abuse:
+    commands: []   # no commands, just a reason label
 
 
 discord:
