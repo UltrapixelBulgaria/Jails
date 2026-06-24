@@ -18,7 +18,10 @@ public final class Jails extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        saveDefaultConfig();
+        saveDefaultConfig();           // writes config.yml from the jar's resources ONLY if missing
+        reloadConfig();                 // loads the file from disk into memory
+        getConfig().options().copyDefaults(true); // merges in any new keys from the jar's bundled config.yml that aren't in the user's file
+        saveConfig();
 
         jailManager = new JailManager(this);
 
@@ -58,6 +61,7 @@ public final class Jails extends JavaPlugin {
             case "setcell"   -> new SetCellCommand(this).onCommand(sender, command, label, args);
             case "setspawn"  -> new SetSpawnCommand(this).onCommand(sender, command, label, args);
             case "info"      -> new InfoCommand(this).onCommand(sender, command, label, args);
+            case "testdb"    ->  new TestDBCommand(this).onCommand(sender, command, label, args);
             default          -> sender.sendMessage("Unknown subcommand.");
         }
 

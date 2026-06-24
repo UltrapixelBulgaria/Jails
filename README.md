@@ -1,6 +1,6 @@
 # 🔒 UPBGJail
 
-A feature-rich, fully configurable Minecraft jail plugin built for Spigot/Paper servers. Supports per-cell management, Discord webhooks, PlaceholderAPI integration, CMI `/whois` interception and complete message customization via `config.yml`.
+A feature-rich, fully configurable Minecraft jail plugin built for Spigot/Paper servers. Supports per-cell management, Discord webhooks, PlaceholderAPI integration, CMI synchronization, `/whois` interception, reason-linked commands, and complete message customization via `config.yml`.
 
 ---
 
@@ -14,6 +14,8 @@ A feature-rich, fully configurable Minecraft jail plugin built for Spigot/Paper 
   - [Jail Region & Cells](#jail-region--cells)
   - [Spawn Location](#spawn-location)
   - [Messages](#messages)
+  - [Template Reasons & Linked Commands](#template-reasons--linked-commands)
+  - [CMI Synchronization](#cmi-synchronization)
   - [Discord Webhook](#discord-webhook)
 - [In-Game Setup Guide](#-in-game-setup-guide)
 - [Commands](#-commands)
@@ -30,12 +32,14 @@ A feature-rich, fully configurable Minecraft jail plugin built for Spigot/Paper 
 - 🔕 **Silent jailing** — use `-s` flag to jail/unjail without a global broadcast
 - 📜 **Full jail history** — per-player history with active/expired status, unjail info and total time served
 - 💬 **100% configurable messages** — every message, color and placeholder lives in `config.yml`
-- 🎨 **HEX color support** — use `#rrggbb` colors anywhere in messages
+- 🎨 **Full color support** — MiniMessage tags, legacy `&` codes, and `&#rrggbb` hex codes all work together in the same message
 - 🔗 **Discord webhook integration** — rich embeds sent to Discord on jail, unjail and auto-release, each individually toggleable
 - 📊 **PlaceholderAPI support** — cell-based and player-based placeholders for holograms, scoreboards and more
 - 🔍 **CMI `/whois` injection** — jail status appended automatically to CMI's whois output
-- 🗄️ **MySQL backend** — all jail data persisted with full history
-- 🔄 **Auto-release scheduler** — players are automatically released and teleported when their sentence expires
+- 🤝 **CMI jail synchronization** — mirrors jail/unjail state into CMI's own jail system so both stay consistent
+- ⚙️ **Reason-linked commands** — template reasons can automatically run console commands (e.g. auto-ban, auto-mute) when used, regardless of staff/player permissions
+- 🗄️ **MySQL backend with connection pooling** — HikariCP-backed pool prevents stale/dropped connection crashes after long idle periods
+- 🔄 **Auto-release scheduler** — players are automatically released and teleported when their sentence expires, even after a server restart
 - ♻️ **Live reload** — reload config and reconnect the database without restarting
 
 ---
@@ -45,12 +49,14 @@ A feature-rich, fully configurable Minecraft jail plugin built for Spigot/Paper 
 | Dependency | Type | Version | Link |
 |---|---|---|---|
 | [Spigot / Paper](https://papermc.io/) | Required | 26.1+ | https://papermc.io |
+| [CMI](https://www.zrips.net/cmi/) | Soft depend | 9.x | https://www.zrips.net/cmi |
 | [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/) | Soft depend | 2.11+ | https://www.spigotmc.org/resources/6245 |
 | [WorldGuard](https://enginehub.org/worldguard) | Soft depend | 7.x | https://enginehub.org/worldguard |
 | [WorldEdit](https://enginehub.org/worldedit) | Soft depend | 7.x | https://enginehub.org/worldedit |
+| [HikariCP](https://github.com/brettwooldridge/HikariCP) | Bundled (shaded) | 5.1+ | https://github.com/brettwooldridge/HikariCP |
 | MySQL | Required | 5.7+ / 8.x | — |
 
-> **Note:** PlaceholderAPI, WorldEdit and WorldGuard are soft dependencies — the plugin will function without them, but their respective features (whois injection, placeholders, region detection) will be unavailable.
+> **Note:** CMI, PlaceholderAPI, WorldEdit and WorldGuard are soft dependencies — the plugin will function without them, but their respective features (CMI sync/whois injection, placeholders, region detection) will be unavailable. HikariCP is bundled directly inside the plugin jar, so no separate installation is needed.
 
 ---
 
@@ -77,13 +83,14 @@ Below is a full annotated `config.yml`. Every option is explained.
 enable: true
 
 database:
-  host: "localhost"
-  port: 3306
-  name: "your_database_name"
+  address: "localhost"
+  database: "your_database_name"
   username: "your_db_user"
   password: "your_db_password"
   table: "jails"
 ```
+
+> Connections are managed through a HikariCP pool internally, so the plugin will automatically recover from dropped or idle-timed-out MySQL connections — no manual reconnect is needed.
 
 ---
 
@@ -136,7 +143,7 @@ The location players are teleported to when released from jail. Set automaticall
 
 ### Messages
 
-Every player-facing message is defined here. Supports `&` color codes, `&l &o &k` formatting codes and `#rrggbb` HEX colors.
+Every player-facing message is defined here. Supports legacy `&` color codes, `&l &o &k` formatting codes, `&#rrggbb` legacy hex, **and** MiniMessage tags (e.g. `<bold>`, `<gradient:#ff0000:#0000ff>`) — all three can be freely mixed in the same string.
 
 **Available placeholders per message are noted in the comments.**
 
@@ -146,6 +153,7 @@ messages:
   no_permission:     "&cNo permission."
   player_not_found:  "&cPlayer not found."
   player_only:       "&cThis command can only be run by a player."
+  invalid_int:       "&cInvalid integer!"
 
   # /jail
   usage_jail:        "&cUsage: /jail <username> <time> [reason] [-s]"
@@ -186,17 +194,77 @@ messages:
 
   # /upjail setregion
   region_set: "&aJail region set to: %region%"          # %region%
+  no_region:  "&cCan't find region: %region%"           # %region%
 
   # /upjail setcell
   cell_set: "&aCell %cell% set to your current location." # %cell%
 
-  # /jailinfo
-  usage_info: "&cUsage: /jailinfo <username>"
+  # /upjail info, setcell, setregion, setspawn usage
+  usage_info:       "&cUsage: /upjail info <username>"
+  usage_setcell:    "&cUsage: /upjail setCell <username>"
+  usage_setregion:  "&cUsage: /upjail setRegion <username>"
+  usage_setspawn:   "&cUsage: /upjail setSpawn <username>"
+
+  no_world_guard_manager: "&cCould not get WorldGuard manager!"
+```
+
+**Mixing color formats in one string is supported:**
+
+```yaml
+broadcast: "&c&l[JAIL] <bold>%player%</bold> &7jailed by &f%staff%&7. <#ff6600>Reason: &f%reason%"
 ```
 
 ---
 
-### Discord Webhook
+### Template Reasons & Linked Commands
+
+Predefined jail reasons can be set up with optional commands that automatically run (as console, bypassing permissions) whenever that exact reason is used in `/jail`.
+
+```yaml
+template-reasons:
+  Hacking:
+    commands:
+      - "ban %player% Hacking - banned via jail reason"
+  Auto clicker:
+    commands:
+      - "mute %player% 1d Auto clicker detected"
+  Spamming:
+    commands:
+      - "mute %player% 10m Spamming"
+  Abuse:
+    commands: []   # just a reason label, no linked command
+```
+
+Supported placeholders inside `commands`: `%player%`, `%staff%`, `%cell%`, `%time%`, `%reason%`.
+
+```
+/jail Steve 1h Hacking
+```
+
+This jails Steve for 1 hour **and** runs `ban Steve Hacking - banned via jail reason` as console — regardless of whether the staff member or Steve has ban permissions. Reason matching is case-insensitive, but must match the configured reason exactly (a custom typed reason that merely contains the word "hacking" will not trigger it).
+
+> ⚠️ Console-executed commands bypass all permission checks. Be deliberate about what you link here — these run with full server authority.
+
+---
+
+### CMI Synchronization
+
+If [CMI](https://www.zrips.net/cmi/) is installed, jail and unjail actions can be mirrored into CMI's own jail system so `/cmi jail` data and your plugin's data stay consistent.
+
+```yaml
+jail:
+  cmi_jail_name: "myJail"   # Must match a jail created via /cmi jailedit addjail <name>
+```
+
+Setup requires creating the CMI jail once in-game:
+
+```
+/cmi jailedit addjail myJail
+```
+
+Then walk to each cell location and add it as a CMI cell through CMI's own editor. Once linked, every `/jail` and `/unjail` (including auto-release) updates both systems together.
+
+---
 
 Each event type can be independently enabled or disabled. Set `enabled: false` on any block to silence that event.
 
@@ -347,9 +415,9 @@ These update automatically as players are jailed and released.
 
 | Command | Description | Permission |
 |---|---|---|
-| `/jail <player> <time> [reason] [-s]` | Jail a player. Add `-s` anywhere in the reason for a silent jail (no broadcast) | `jails.jail` |
+| `/jail <player> <time> [reason] [-s]` | Jail a player. Add `-s` anywhere in the reason for a silent jail (no broadcast). If the reason matches a configured template reason with linked commands, those run automatically as console | `jails.jail` |
 | `/unjail <player> [reason] [-s]` | Unjail a player. Add `-s` for silent unjail | `jails.unjail` |
-| `/jailinfo <player>` | View full jail history for a player | `jails.info` |
+| `/jailinfo <player>` | View full jail history for a player, including active/expired status and unjail details | `jails.info` |
 | `/upjail setcell <number>` | Save your current location as a jail cell | `jails.admin` |
 | `/upjail setspawn` | Save your current location as the release spawn | `jails.admin` |
 | `/upjail setregion <name>` | Link a WorldGuard region as the jail region | `jails.admin` |
@@ -434,77 +502,18 @@ Using [HolographicDisplays](https://dev.bukkit.org/projects/holographic-displays
 
 ## 🔨 Building from Source
 
-Requirements: Java 25+, Gradle 9+
+Requirements: Java 21+ (toolchain auto-resolved), Gradle 9+
 
 ```bash
 git clone https://github.com/UltrapixelBulgaria/Jails.git
 cd Jails
-./gradlew build
+./gradlew clean shadowJar
 ```
 
-The compiled jar will be output to `build/libs/Jails.jar`.
+The compiled, fully-shaded jar will be output to `build/libs/Jails.jar` (or wherever `destinationDirectory` is configured to point, e.g. directly into a local test server's `plugins/` folder).
 
-### build.gradle
+> ⚠️ Always build with the `shadowJar` task, not the plain `jar` task. The plain `jar` task does not bundle shaded dependencies (like HikariCP) and will cause `NoClassDefFoundError` at runtime if deployed.
 
-```groovy
-plugins {
-    id 'java'
-    id("xyz.jpenilla.run-paper") version "2.3.1"
-}
-
-group = 'org.proto68'
-version = '1.0'
-
-repositories {
-    mavenCentral()
-    maven {
-        name = "papermc-repo"
-        url = "https://repo.papermc.io/repository/maven-public/"
-    }
-    maven {
-        name = "enginehub"
-        url = "https://maven.enginehub.org/repo/"
-    }
-    maven {
-        url = 'https://repo.extendedclip.com/releases/'
-    }
-}
-
-dependencies {
-    // Paper API
-    compileOnly("io.papermc.paper:paper-api:26.1.2.build.5-alpha")
-
-    // WorldEdit
-    compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.4.0")
-
-    // WorldGuard
-    compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.16")
-
-    // PlaceholderAPI
-    compileOnly("me.clip:placeholderapi:2.12.2")
-
-    // WorldGuard Events
-    compileOnly("net.raidstone:WorldGuardEvents:1.18.1")
-}
-
-def targetJavaVersion = 25
-
-java {
-    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
-    sourceCompatibility = javaVersion
-    targetCompatibility = javaVersion
-    if (JavaVersion.current() < javaVersion) {
-        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
-    }
-}
-
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-    if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
-        options.release.set(targetJavaVersion)
-    }
-}
-```
 ---
 
 ## 📄 License

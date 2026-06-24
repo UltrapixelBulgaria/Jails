@@ -20,13 +20,13 @@ public class SetSpawnCommand implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String @NonNull [] args) {
 
-        if (!sender.hasPermission("jails.setspawn")) {
-            sender.sendMessage(MessageUtil.get(plugin, "no_permission"));
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(MessageUtil.get(plugin, "player_only"));
             return true;
         }
 
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage(MessageUtil.get(plugin, "player_only"));
+        if (!player.hasPermission("jails.admin")) {
+            sender.sendMessage(MessageUtil.get(plugin, "no_permission"));
             return true;
         }
 

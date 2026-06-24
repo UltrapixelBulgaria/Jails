@@ -26,10 +26,10 @@ public class UpJailTabCompleter implements TabCompleter {
                 if (player == null){
                     suggestions.addAll(Arrays.asList("testDB", "reload"));
                 } else {
-                    if (player.hasPermission("jails.setregion")) {
+                    if (player.hasPermission("jails.setregion") || player.hasPermission("jails.admin")) {
                         suggestions.add("setRegion");
                     }
-                    if (player.hasPermission("jails.setcell")) {
+                    if (player.hasPermission("jails.setcell") || player.hasPermission("jails.admin")) {
                         suggestions.add("setCell");
                     }
                     if (player.hasPermission("jails.testdb")) {
@@ -38,7 +38,7 @@ public class UpJailTabCompleter implements TabCompleter {
                     if (player.hasPermission("jails.reload")){
                         suggestions.add("reload");
                     }
-                    if (player.hasPermission("jails.setspawn")){
+                    if (player.hasPermission("jails.setspawn") || player.hasPermission("jails.admin")){
                         suggestions.add("setSpawn");
                     }
                     if (player.hasPermission("jails.info")){
@@ -46,10 +46,10 @@ public class UpJailTabCompleter implements TabCompleter {
                     }
                 }
             } else if (args.length == 2 && player != null) {
-                if (args[0].equalsIgnoreCase("setregion") && player.hasPermission("jails.setregion")){
+                if (args[0].equalsIgnoreCase("setregion") && (player.hasPermission("jails.setregion") || player.hasPermission("jails.admin"))){
                     suggestions.addAll(getRegionNames(player));
                 }
-                if (args[0].equalsIgnoreCase("setcell") && player.hasPermission("jails.setcell")){
+                if (args[0].equalsIgnoreCase("setcell") && (player.hasPermission("jails.setcell") || player.hasPermission("jails.admin"))){
                     suggestions.add("<number>");
                 }
                 if (args[0].equalsIgnoreCase("info") && player.hasPermission("jails.info")){

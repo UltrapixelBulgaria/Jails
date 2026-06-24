@@ -1,5 +1,5 @@
 name: Jails
-version: '1.2'
+version: '1.3'
 main: org.proto68.jails.Jails
 api-version: '26.1.2'
 prefix: UPBG Jails
@@ -24,18 +24,6 @@ commands:
     usage: /unjail <username> [reason] [-s]
 
 permissions:
-  jails.setcell:
-    description: Allows the player to set cells
-    default: op
-
-  jails.setregion:
-    description: Allows the player to set main region of jail
-    default: op
-
-  jails.reload:
-    description: Allows the sender to reload the plugin
-    default: op
-
   jails.jail:
     description: Allows the sender to jail a player
     default: op
@@ -44,10 +32,10 @@ permissions:
     description: Allows the sender to unjail a player
     default: op
 
-  jails.setspawn:
-    description: Allows the player to set spawn after unjail
-    default: op
-
   jails.info:
     description: Allows the player to check jail info for another player
+    default: op
+
+  jails.admin:
+    description: Grants all permissions to set spawn, cell and region and test the database
     default: op

@@ -97,7 +97,9 @@ messages:
   usage_setregion: "&cUsage: /upjail setRegion <username>"
   usage_setspawn: "&cUsage: /upjail setSpawn <username>"
   region_set: "&aJail region set to: %region%"
+  region_not_set: "&cNo jail region has been configured. Use &e/upjail setRegion <name> &cfirst."
   no_region: "&cCan't find region: %region%"
+  cell_outside_region: "&cYour position is outside the jail region '%region%'. Move inside the region before setting a cell."
   cell_set: "&aCell %cell% set to your current location."
   no_world_guard_manager: "&cCould not get WorldGuard manager!"
 

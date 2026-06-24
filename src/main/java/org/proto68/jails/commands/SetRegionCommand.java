@@ -31,7 +31,7 @@ public class SetRegionCommand implements CommandExecutor {
             return true;
         }
 
-        if (!player.hasPermission("jails.setregion")) {
+        if (!player.hasPermission("jails.admin")) {
             player.sendMessage(MessageUtil.get(plugin, "no_permission"));
             return true;
         }

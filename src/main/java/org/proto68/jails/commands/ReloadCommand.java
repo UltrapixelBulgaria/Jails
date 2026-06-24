@@ -18,7 +18,7 @@ public class ReloadCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, @NonNull Command command, @NonNull String label, String @NonNull [] args) {
         // Checking the sender for required permission
-        if (sender.hasPermission("jails.reload")) {
+        if (sender.hasPermission("jails.admin")) {
             // Getting the time before the reload
             long before = System.currentTimeMillis();
             // Reloading the plugin
