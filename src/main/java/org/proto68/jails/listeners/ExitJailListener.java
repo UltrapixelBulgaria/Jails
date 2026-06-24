@@ -3,7 +3,7 @@ package org.proto68.jails.listeners;
 import java.util.Objects;
 import java.util.UUID;
 
-import net.raidstone.wgevents.events.RegionLeftEvent;
+import org.proto68.wgevents.events.RegionLeftEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

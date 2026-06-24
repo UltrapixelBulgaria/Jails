@@ -51,6 +51,7 @@ A feature-rich, fully configurable Minecraft jail plugin built for Spigot/Paper 
 | [Spigot / Paper](https://papermc.io/) | Required | 26.1+ | https://papermc.io |
 | [CMI](https://www.zrips.net/cmi/) | Soft depend | 9.x | https://www.zrips.net/cmi |
 | [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/) | Soft depend | 2.11+ | https://www.spigotmc.org/resources/6245 |
+| [WorldGuard Events](https://github.com/UltrapixelBulgaria/WorldGuard-Events) | Soft depend | 26.2+ | https://github.com/UltrapixelBulgaria/WorldGuard-Events |
 | [WorldGuard](https://enginehub.org/worldguard) | Soft depend | 7.x | https://enginehub.org/worldguard |
 | [WorldEdit](https://enginehub.org/worldedit) | Soft depend | 7.x | https://enginehub.org/worldedit |
 | [HikariCP](https://github.com/brettwooldridge/HikariCP) | Bundled (shaded) | 5.1+ | https://github.com/brettwooldridge/HikariCP |
